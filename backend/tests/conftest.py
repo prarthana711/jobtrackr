@@ -31,3 +31,17 @@ def client():
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def make_headers(client):
+    """Returns a function that registers a user, logs in, and gives auth headers."""
+
+    def _make(email="student@example.com", password="supersecret1"):
+        client.post("/auth/register", json={"email": email, "password": password})
+        response = client.post(
+            "/auth/login", data={"username": email, "password": password}
+        )
+        return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+    return _make
