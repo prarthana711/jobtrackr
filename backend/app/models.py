@@ -1,7 +1,7 @@
 import enum
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, Index, String, Text, func
+from sqlalchemy import Date, DateTime, ForeignKey, Index, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -52,7 +52,10 @@ class Job(Base):
 
 class Application(Base):
     __tablename__ = "applications"
-    __table_args__ = (Index("ix_applications_user_status", "user_id", "status"),)
+    __table_args__ = (
+        Index("ix_applications_user_status", "user_id", "status"),
+        UniqueConstraint("user_id", "job_id", name="uq_applications_user_job"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))

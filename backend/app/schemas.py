@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated
 
 from pydantic import (
@@ -7,10 +7,13 @@ from pydantic import (
     ConfigDict,
     EmailStr,
     StringConstraints,
+    computed_field,
     field_validator,
     model_validator,
 )
 
+from app.models import ApplicationStatus
+from app.services.workflow import allowed_next as workflow_allowed_next
 
 # ---------- Auth ----------
 
@@ -112,3 +115,67 @@ class JobList(BaseModel):
     page: int
     page_size: int
     pages: int
+
+# ---------- Applications ----------
+
+Notes = Annotated[str, StringConstraints(strip_whitespace=True, max_length=5000)]
+
+
+class ApplicationCreate(BaseModel):
+    job_id: int
+    notes: Notes | None = None
+
+
+class ApplicationUpdate(BaseModel):
+    """Notes and applied date only. Status changes have their own endpoint."""
+
+    notes: Notes | None = None
+    applied_on: date | None = None
+
+
+class StatusChange(BaseModel):
+    status: ApplicationStatus
+
+
+class JobSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    company: str
+    location: str | None
+
+
+class ApplicationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    job_id: int
+    status: ApplicationStatus
+    applied_on: date | None
+    notes: str | None
+    created_at: datetime
+    job: JobSummary
+
+    @computed_field
+    @property
+    def allowed_next(self) -> list[ApplicationStatus]:
+        """Tells the frontend which buttons to show."""
+        return workflow_allowed_next(self.status)
+
+
+class ApplicationList(BaseModel):
+    items: list[ApplicationOut]
+    total: int
+    page: int
+    page_size: int
+    pages: int
+
+
+class StatusHistoryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    from_status: str | None
+    to_status: str
+    changed_at: datetime
