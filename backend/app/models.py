@@ -1,7 +1,7 @@
 import enum
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, Index, String, Text, UniqueConstraint, func
+from sqlalchemy import JSON, Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -28,6 +28,9 @@ class User(Base):
         back_populates="user", cascade="all, delete-orphan"
     )
     applications: Mapped[list["Application"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    resumes: Mapped[list["Resume"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
 
@@ -86,3 +89,20 @@ class StatusHistory(Base):
     changed_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     application: Mapped["Application"] = relationship(back_populates="history")
+
+class Resume(Base):
+    __tablename__ = "resumes"
+    __table_args__ = (
+        UniqueConstraint("stored_filename", name="uq_resumes_stored_filename"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    original_filename: Mapped[str] = mapped_column(String(255))
+    stored_filename: Mapped[str] = mapped_column(String(64))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    raw_text: Mapped[str] = mapped_column(Text)
+    parsed_skills: Mapped[list[str]] = mapped_column(JSON, default=list)
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    user: Mapped["User"] = relationship(back_populates="resumes")

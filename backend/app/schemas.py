@@ -179,3 +179,19 @@ class StatusHistoryOut(BaseModel):
     from_status: str | None
     to_status: str
     changed_at: datetime
+
+# ---------- Resumes ----------
+
+
+class ResumeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    original_filename: str
+    size_bytes: int
+    parsed_skills: list[str]
+    uploaded_at: datetime
+
+
+class ResumeDetail(ResumeOut):
+    raw_text: str
