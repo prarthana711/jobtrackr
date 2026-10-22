@@ -1,7 +1,7 @@
 import enum
 from datetime import date, datetime
 
-from sqlalchemy import JSON, Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import JSON, Date, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -49,6 +49,9 @@ class Job(Base):
 
     user: Mapped["User"] = relationship(back_populates="jobs")
     applications: Mapped[list["Application"]] = relationship(
+        back_populates="job", cascade="all, delete-orphan"
+    )
+    matches: Mapped[list["MatchResult"]] = relationship(
         back_populates="job", cascade="all, delete-orphan"
     )
 
@@ -106,3 +109,26 @@ class Resume(Base):
     uploaded_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     user: Mapped["User"] = relationship(back_populates="resumes")
+    matches: Mapped[list["MatchResult"]] = relationship(
+        back_populates="resume", cascade="all, delete-orphan"
+    )
+
+class MatchResult(Base):
+    __tablename__ = "match_results"
+    __table_args__ = (
+        UniqueConstraint("resume_id", "job_id", name="uq_match_results_resume_job"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    resume_id: Mapped[int] = mapped_column(ForeignKey("resumes.id"))
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id"), index=True)
+    score: Mapped[float] = mapped_column(Float)
+    skill_score: Mapped[float | None] = mapped_column(Float)
+    text_score: Mapped[float] = mapped_column(Float)
+    matched_skills: Mapped[list[str]] = mapped_column(JSON, default=list)
+    missing_skills: Mapped[list[str]] = mapped_column(JSON, default=list)
+    computed_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    resume: Mapped["Resume"] = relationship(back_populates="matches")
+    job: Mapped["Job"] = relationship(back_populates="matches")

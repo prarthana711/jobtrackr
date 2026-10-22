@@ -195,3 +195,25 @@ class ResumeOut(BaseModel):
 
 class ResumeDetail(ResumeOut):
     raw_text: str
+
+# ---------- Matching ----------
+
+
+class MatchRequest(BaseModel):
+    resume_id: int
+    job_id: int
+
+
+class MatchOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    resume_id: int
+    job_id: int
+    score: float
+    skill_score: float | None
+    text_score: float
+    matched_skills: list[str]
+    missing_skills: list[str]
+    computed_at: datetime
+    job: JobSummary
