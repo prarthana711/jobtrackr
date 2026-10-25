@@ -188,3 +188,15 @@ def test_delete_resume_removes_record_and_file(client, make_headers, make_pdf, u
     assert client.delete(f"/resumes/{resume['id']}", headers=headers).status_code == 204
     assert client.get(f"/resumes/{resume['id']}", headers=headers).status_code == 404
     assert list(uploads_dir.glob("*.pdf")) == []
+
+def test_download_when_the_file_is_missing_from_storage(
+    client, make_headers, make_pdf, uploads_dir
+):
+    headers = make_headers()
+    resume = upload_ok(client, headers, make_pdf(RESUME_LINES))
+    for saved in uploads_dir.glob("*.pdf"):
+        saved.unlink()  # the database row stays, but the file is gone
+
+    response = client.get(f"/resumes/{resume['id']}/file", headers=headers)
+    assert response.status_code == 404
+    assert "missing" in response.json()["detail"]

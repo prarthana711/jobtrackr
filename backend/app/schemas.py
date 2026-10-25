@@ -217,3 +217,35 @@ class MatchOut(BaseModel):
     missing_skills: list[str]
     computed_at: datetime
     job: JobSummary
+
+# ---------- Analytics ----------
+
+
+class FunnelStage(BaseModel):
+    stage: ApplicationStatus
+    count: int
+    percent_of_total: float
+
+
+class FunnelOut(BaseModel):
+    total: int
+    stages: list[FunnelStage]
+    rejected: int
+    response_rate: float | None
+    current: dict[str, int]
+
+
+class WeekCount(BaseModel):
+    week_start: date
+    applications: int
+
+
+class WeakSpot(BaseModel):
+    skill: str
+    missing_in_jobs: int
+    percent_of_jobs: float
+
+
+class WeakSpotsOut(BaseModel):
+    jobs_analysed: int
+    skills: list[WeakSpot]
