@@ -5,7 +5,7 @@ import AuthForm from "../components/AuthForm.jsx";
 export default function Register() {
   const { user, register } = useAuth();
 
-  if (user) return <Navigate to="/jobs" replace />;
+  if (user) return <Navigate to="/dashboard" replace />;
 
   return (
     <AuthForm

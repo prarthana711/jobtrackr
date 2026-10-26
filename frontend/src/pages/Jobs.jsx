@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { api } from "../api.js";
 import JobForm from "../components/JobForm.jsx";
 import Pagination from "../components/Pagination.jsx";
-import { formatDate } from "../format.js";
+import { formatDate, safeUrl } from "../format.js";
 
 const PAGE_SIZE = 10;
 
-// Only ever use http(s) links as clickable hrefs (the backend checks this too)
-function safeUrl(url) {
-  return url && /^https?:\/\//i.test(url) ? url : null;
-}
+
 
 export default function Jobs() {
   const [searchInput, setSearchInput] = useState(""); // what is typed in the box
@@ -124,7 +122,11 @@ export default function Jobs() {
           <li key={job.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h2 className="truncate font-medium">{job.title}</h2>
+                                <h2 className="truncate font-medium">
+                  <Link to={`/jobs/${job.id}`} className="hover:text-indigo-600 hover:underline">
+                    {job.title}
+                  </Link>
+                </h2>
                 <p className="text-sm text-slate-600">
                   {job.company}
                   {job.location ? ` · ${job.location}` : ""}

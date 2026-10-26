@@ -5,7 +5,7 @@ import AuthForm from "../components/AuthForm.jsx";
 export default function Login() {
   const { user, login } = useAuth();
   const location = useLocation();
-  const destination = location.state?.from?.pathname ?? "/jobs";
+  const destination = location.state?.from?.pathname ?? "/dashboard";
 
   // Already logged in (or just logged in): go where they were headed
   if (user) return <Navigate to={destination} replace />;

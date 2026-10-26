@@ -62,11 +62,15 @@ export function setUnauthorizedHandler(handler) {
 
 // ---------- The one function that talks to the server ----------
 
-async function request(path, { method = "GET", body, form, auth = true } = {}) {
+async function request(path, { method = "GET", body, form, formData, auth = true } = {}) {
   const headers = {};
   let payload;
 
-  if (form) {
+  if (formData) {
+    // A file upload. Do NOT set Content-Type here: the browser sets it itself,
+    // including the boundary that separates the parts of the upload.
+    payload = formData;
+  } else if (form) {
     // The login endpoint expects form fields, not JSON
     headers["Content-Type"] = "application/x-www-form-urlencoded";
     payload = new URLSearchParams(form);
@@ -106,21 +110,58 @@ async function request(path, { method = "GET", body, form, auth = true } = {}) {
 // ---------- The API, one function per endpoint ----------
 
 export const api = {
+  // Auth
   register: (email, password) =>
     request("/auth/register", { method: "POST", body: { email, password }, auth: false }),
-
   login: (email, password) =>
     request("/auth/login", { method: "POST", form: { username: email, password }, auth: false }),
-
   me: () => request("/auth/me"),
 
+  // Jobs
   listJobs: ({ search = "", page = 1, pageSize = 10 } = {}) => {
     const params = new URLSearchParams({ page, page_size: pageSize });
     if (search.trim()) params.set("search", search.trim());
     return request(`/jobs?${params}`);
   },
-
+  getJob: (id) => request(`/jobs/${id}`),
   createJob: (job) => request("/jobs", { method: "POST", body: job }),
-
   deleteJob: (id) => request(`/jobs/${id}`, { method: "DELETE" }),
+
+  // Applications
+  listApplications: ({ status, page = 1, pageSize = 100 } = {}) => {
+    const params = new URLSearchParams({ page, page_size: pageSize });
+    if (status) params.set("status", status);
+    return request(`/applications?${params}`);
+  },
+  trackJob: (jobId) => request("/applications", { method: "POST", body: { job_id: jobId } }),
+  changeStatus: (id, status) =>
+    request(`/applications/${id}/status`, { method: "PATCH", body: { status } }),
+  applicationHistory: (id) => request(`/applications/${id}/history`),
+  deleteApplication: (id) => request(`/applications/${id}`, { method: "DELETE" }),
+
+  // Resumes
+  listResumes: () => request("/resumes"),
+  getResume: (id) => request(`/resumes/${id}`),
+  uploadResume: (file) => {
+    const formData = new FormData();
+    formData.append("file", file); // "file" is the field name the backend expects
+    return request("/resumes", { method: "POST", formData });
+  },
+  deleteResume: (id) => request(`/resumes/${id}`, { method: "DELETE" }),
+
+  // Matching
+  runMatch: (resumeId, jobId) =>
+    request("/match", { method: "POST", body: { resume_id: resumeId, job_id: jobId } }),
+  listMatches: ({ jobId, resumeId } = {}) => {
+    const params = new URLSearchParams();
+    if (jobId) params.set("job_id", jobId);
+    if (resumeId) params.set("resume_id", resumeId);
+    const query = params.toString();
+    return request(`/match${query ? `?${query}` : ""}`);
+  },
+
+  // Analytics
+  funnel: () => request("/analytics/funnel"),
+  weekly: (weeks = 12) => request(`/analytics/weekly?weeks=${weeks}`),
+  weakSpots: (limit = 10) => request(`/analytics/weak-spots?limit=${limit}`),
 };
