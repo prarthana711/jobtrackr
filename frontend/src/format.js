@@ -30,3 +30,14 @@ export function formatDay(value) {
 export function safeUrl(url) {
   return url && /^https?:\/\//i.test(url) ? url : null;
 }
+
+// A date and time like "5 Nov, 9:00 am", shown in the user's own timezone
+export function formatDateTime(value) {
+  if (!value) return "";
+  return toDate(value).toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}

@@ -78,6 +78,9 @@ class Application(Base):
     history: Mapped[list["StatusHistory"]] = relationship(
         back_populates="application", cascade="all, delete-orphan"
     )
+    reminders: Mapped[list["Reminder"]] = relationship(
+        back_populates="application", cascade="all, delete-orphan"
+    )
 
 
 class StatusHistory(Base):
@@ -132,3 +135,22 @@ class MatchResult(Base):
 
     resume: Mapped["Resume"] = relationship(back_populates="matches")
     job: Mapped["Job"] = relationship(back_populates="matches")
+
+class Reminder(Base):
+    __tablename__ = "reminders"
+    __table_args__ = (
+        # Speeds up "which reminders are due?", the question asked every minute
+        Index("ix_reminders_due", "sent_at", "remind_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    application_id: Mapped[int] = mapped_column(ForeignKey("applications.id"), index=True)
+    remind_at: Mapped[datetime] = mapped_column(DateTime)  # always UTC
+    note: Mapped[str | None] = mapped_column(String(500))
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    application: Mapped["Application"] = relationship(back_populates="reminders")

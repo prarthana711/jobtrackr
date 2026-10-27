@@ -7,19 +7,28 @@ import { useQuery } from "../hooks.js";
 
 export default function Applications() {
   const { data, error, loading, reload } = useQuery("applications", () => api.listApplications());
+  const remindersQuery = useQuery("reminders", () => api.listReminders({ status: "pending" }));
   const applications = data?.items ?? [];
 
   // Sort the applications into one list per stage
   const columns = Object.fromEntries(STATUS_ORDER.map((status) => [status, []]));
   for (const application of applications) columns[application.status]?.push(application);
 
+  // Group the pending reminders by the application they belong to
+  const remindersByApplication = {};
+  for (const reminder of remindersQuery.data ?? []) {
+    (remindersByApplication[reminder.application_id] ??= []).push(reminder);
+  }
+
+  const shownError = error || remindersQuery.error;
+
   return (
     <div>
       <h1 className="text-2xl font-semibold">Application board</h1>
 
-      {error && (
+      {shownError && (
         <p role="alert" className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
+          {shownError}
         </p>
       )}
 
@@ -51,7 +60,13 @@ export default function Applications() {
               </div>
               <ul className="space-y-3">
                 {columns[status].map((application) => (
-                  <ApplicationCard key={application.id} application={application} onChanged={reload} />
+                  <ApplicationCard
+                    key={application.id}
+                    application={application}
+                    onChanged={reload}
+                    reminders={remindersByApplication[application.id] ?? []}
+                    onRemindersChanged={remindersQuery.reload}
+                  />
                 ))}
               </ul>
             </section>

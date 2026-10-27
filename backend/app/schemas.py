@@ -3,6 +3,7 @@ from typing import Annotated
 
 from pydantic import (
     AfterValidator,
+    AwareDatetime,
     BaseModel,
     ConfigDict,
     EmailStr,
@@ -14,7 +15,7 @@ from pydantic import (
 
 from app.models import ApplicationStatus
 from app.services.workflow import allowed_next as workflow_allowed_next
-
+from app.config import settings
 # ---------- Auth ----------
 
 
@@ -249,3 +250,36 @@ class WeakSpot(BaseModel):
 class WeakSpotsOut(BaseModel):
     jobs_analysed: int
     skills: list[WeakSpot]
+
+# ---------- Reminders ----------
+
+ReminderNote = Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)]
+
+
+class ReminderCreate(BaseModel):
+    # AwareDatetime rejects times with no timezone, like "2040-06-01T09:00:00".
+    # The browser converts the user's local time to an exact moment before sending it.
+    remind_at: AwareDatetime
+    note: ReminderNote | None = None
+
+
+class ReminderOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    application_id: int
+    remind_at: datetime
+    note: str | None
+    sent_at: datetime | None
+    attempts: int
+    created_at: datetime
+    # last_error is deliberately NOT here: mail server errors can reveal internal details
+
+    @computed_field
+    @property
+    def status(self) -> str:
+        if self.sent_at is not None:
+            return "sent"
+        if self.attempts >= settings.reminder_max_attempts:
+            return "failed"
+        return "pending"

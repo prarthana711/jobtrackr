@@ -164,4 +164,18 @@ export const api = {
   funnel: () => request("/analytics/funnel"),
   weekly: (weeks = 12) => request(`/analytics/weekly?weeks=${weeks}`),
   weakSpots: (limit = 10) => request(`/analytics/weak-spots?limit=${limit}`),
+    // Reminders
+  listReminders: ({ status, applicationId } = {}) => {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    if (applicationId) params.set("application_id", applicationId);
+    const query = params.toString();
+    return request(`/reminders${query ? `?${query}` : ""}`);
+  },
+  createReminder: (applicationId, remindAt, note) =>
+    request(`/applications/${applicationId}/reminders`, {
+      method: "POST",
+      body: { remind_at: remindAt, note: note || null },
+    }),
+  deleteReminder: (id) => request(`/reminders/${id}`, { method: "DELETE" }),
 };

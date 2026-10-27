@@ -4,6 +4,7 @@ import { api } from "../api.js";
 import { STATUS_LABELS } from "../constants.js";
 import { formatDate } from "../format.js";
 import { useQuery } from "../hooks.js";
+import ReminderControl from "./ReminderControl.jsx";
 
 function label(status) {
   return STATUS_LABELS[status] ?? status;
@@ -31,7 +32,7 @@ function History({ applicationId }) {
   );
 }
 
-export default function ApplicationCard({ application, onChanged }) {
+export default function ApplicationCard({ application, onChanged, reminders = [], onRemindersChanged }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [showHistory, setShowHistory] = useState(false);
