@@ -105,3 +105,9 @@ def build_pdf(lines: list[str], pages: int = 1) -> bytes:
 def make_pdf():
     """Returns the PDF builder: make_pdf(["line one", "line two"])."""
     return build_pdf
+
+@pytest.fixture(autouse=True)
+def quiet_background_work(monkeypatch):
+    """Tests never start the reminder loop and never send real email."""
+    monkeypatch.setattr(settings, "reminder_loop_enabled", False)
+    monkeypatch.setattr(settings, "smtp_host", "")

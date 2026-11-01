@@ -2,7 +2,7 @@ import { Link, Navigate, Route, Routes } from "react-router";
 import Layout from "./components/Layout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Applications from "./pages/Applications.jsx";
-import Dashboard from "./pages/Dashboard.jsx";
+import Dashboard from "./pages/DashBoard.jsx";
 import JobDetail from "./pages/JobDetail.jsx";
 import Jobs from "./pages/Jobs.jsx";
 import Login from "./pages/Login.jsx";

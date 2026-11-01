@@ -92,6 +92,11 @@ export default function ApplicationCard({ application, onChanged, reminders = []
       )}
 
       <div className="mt-3 flex items-center justify-between text-xs">
+        <ReminderControl
+        applicationId={application.id}
+        reminders={reminders}
+        onChanged={onRemindersChanged}
+      />
         <button
           className="font-medium text-indigo-600 hover:underline"
           onClick={() => setShowHistory((open) => !open)}
