@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: jobtrackr
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the .env file next to compose.yaml}
+      POSTGRES_DB: jobtrackr
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432" # only reachable from your own computer; handy for debugging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobtrackr -d jobtrackr"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://jobtrackr:${POSTGRES_PASSWORD}@db:5432/jobtrackr
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in the .env file next to compose.yaml}
+      CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+      UPLOAD_DIR: /app/uploads
+      REMINDER_LOOP_ENABLED: "true"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy # wait until the database really accepts connections
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  uploads:

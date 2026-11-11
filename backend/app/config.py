@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -28,6 +29,16 @@ class Settings(BaseSettings):
     max_pending_reminders_per_user: int = 50
 
     model_config = SettingsConfigDict(env_file=".env")
+
+    @field_validator("database_url")
+    @classmethod
+    def use_the_psycopg_driver(cls, value: str) -> str:
+        # Hosting services hand out plain "postgres://" or "postgresql://" addresses,
+        # but SQLAlchemy needs to be told which driver to use.
+        for prefix in ("postgres://", "postgresql://"):
+            if value.startswith(prefix):
+                return "postgresql+psycopg://" + value[len(prefix):]
+        return value
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -1,14 +1,32 @@
+import os
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.engine import make_url
 
 from app import models  # noqa: F401  (registers the tables)
 from app.config import settings
 from app.database import Base, get_db
 from app.main import app
 
+# Set TEST_DATABASE_URL to run the whole suite against PostgreSQL instead of SQLite
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
+
+
+def make_test_engine():
+    if TEST_DATABASE_URL:
+        database_name = make_url(TEST_DATABASE_URL).database or ""
+        if "test" not in database_name:
+            # The tests drop every table, so never point them at a real database
+            raise RuntimeError("TEST_DATABASE_URL must name a database with 'test' in it")
+        return create_engine(TEST_DATABASE_URL)
+    return create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,  # keep one shared connection, or the memory DB vanishes
+    )
 
 @pytest.fixture(autouse=True)
 def uploads_dir(tmp_path, monkeypatch):
@@ -20,12 +38,9 @@ def uploads_dir(tmp_path, monkeypatch):
 
 @pytest.fixture
 def client():
-    """A test client wired to a fresh in-memory database."""
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,  # keep one shared connection, or the memory DB vanishes
-    )
+    """A test client wired to a fresh, empty database."""
+    engine = make_test_engine()
+    Base.metadata.drop_all(engine)  # matters for PostgreSQL, where the database outlives a test
     Base.metadata.create_all(engine)
     TestingSession = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
@@ -40,7 +55,7 @@ def client():
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
-
+    engine.dispose()
 
 @pytest.fixture
 def make_headers(client):
